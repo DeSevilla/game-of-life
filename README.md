@@ -24,12 +24,12 @@ The starting macros are "glider" (creates a glider in the top left, assuming it 
 and "genesis" (fills the board with random soup then runs for 100 turns with 0.15 delay).
 
 The commands are:
-stop - exit the program
-step [<n>] - take <n> game steps without displaying intermediate results; if n is omitted it will be 1
-run <n> [<d>] - run and display n game steps with a delay of d; if d is omitted it will be 0.3
-flip <x> <y> - flip the state at cell (x, y)
-board <n> - set the board to be an empty n by n square
-soup [<n>] - set the board to be an n by n square with random contents. If n is omitted it will be the current board size.
-record - begin recording a macro
-end <name> - saves the current macro as <name>. It can then be invoked as a command.
-help - prints a help message. This is mostly redundant with this document but will contain a list of extant macros.
+* stop - exit the program
+* step [<n>] - take <n> game steps without displaying intermediate results; if n is omitted it will be 1
+* run <n> [<d>] - run and display n game steps with a delay of d; if d is omitted it will be 0.3
+* flip <x> <y> - flip the state at cell (x, y)
+* board <n> - set the board to be an empty n by n square
+* soup [<n>] - set the board to be an n by n square with random contents. If n is omitted it will be the current board size.
+* record - begin recording a macro
+* end <name> - saves the current macro as <name>. It can then be invoked as a command.
+* help - prints a help message. This is mostly redundant with this document but will contain a list of extant macros.
