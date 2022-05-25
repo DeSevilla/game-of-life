@@ -20,8 +20,8 @@ Commands can be chained together with semicolons.
 The state of the board will be displayed after each command.
 
 You can record sequences of commands as macros. Macros are saved in macros.json.
-The starting macros are "glider" (creates a glider in the top left, assuming it is empty)
-and "genesis" (fills the board with random soup then runs for 100 turns with 0.15 delay).
+The starting macros are `glider` (creates a glider in the top left, assuming it is empty)
+and `genesis` (fills the board with random soup then runs for 100 turns with 0.15 delay).
 
 The commands are:
 * `stop` - exit the program

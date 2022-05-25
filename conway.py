@@ -1,9 +1,5 @@
-from ast import arg
 import numpy as np
-import re, random, json, time
-# from graphics import *
-
-# fuck it we'll do this as a list of lists
+import random, json, time
 
 def step(array):
     new_array = [0] * len(array)
@@ -151,7 +147,7 @@ def print_board(board):
 #     win.getMouse()
 
 def make_board(n, soup=False):
-    board = [False] * n
+    board = np.empty(shape=(n, n), dtype=np.bool_)
     for i, row in enumerate(board):
         if soup:
             board[i] = [random.randint(0, 1) == 0 for _ in range(n)]
