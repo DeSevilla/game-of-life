@@ -132,19 +132,11 @@ def repl(board):
         commands = commands[1:]
 
 def print_board(board):
-    board_str = '  ' + ' '.join([str(i % 10) for i in range(len(board))]) + '\n'
+    board_str = '   ' + ' '.join([str(int(i / 10)) for i in range(len(board))]) + '\n'
+    board_str += '   ' + ' '.join([str(i % 10) for i in range(len(board))]) + '\n'
     for i, row in enumerate(board):
-        board_str += f'{i % 10} ' + ' '.join(['▮' if cell else '.' for cell in row]) + '\n'
+        board_str += f'{i:2} ' + ' '.join(['▮' if cell else '.' for cell in row]) + '\n'
     print(board_str, end=None)
-
-# def print_board(board):
-#     win = GraphWin('Game of Life', len(board) * 10, len(board[0]) * 10)
-#     win.setCoords(0, 0, len(board), len(board[0]))
-#     for i in range(len(board)):
-#         for j in range(len(board[0])):
-#             cell = Rectangle(Point(i, i+1), Point(j, j+1))
-#             cell.draw(win)
-#     win.getMouse()
 
 def make_board(n, soup=False):
     board = np.empty(shape=(n, n), dtype=np.bool_)
