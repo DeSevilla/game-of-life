@@ -123,7 +123,7 @@ def repl(board):
                 current_macro = ''
             else:
                 print("Not currently recording")
-        elif argc[0] == "stop":
+        elif argc[0] == "stop" or argc[0] == "quit":
             break
         elif argc[0] in macros:
             commands = [commands[0]] + [c.strip() for c in macros[argc[0]].split(';')] + commands[1:]
