@@ -1,1 +1,1 @@
-{"pentomino": "live 0 0;live 0 1;live 0 2;live 1 2;live -1 1"}
+{"pentomino": "live 0 0;live 0 1;live 0 2;live 1 2;live -1 1", "glider": "live 0 2;live 1 2;live 2 2;live 2 1;live 1 0", "pentorange": "window fix -20 20 -20 20;pentomino;live 0 0;live 0 1;live 0 2;live 1 2;live -1 1;step 1103;window range"}

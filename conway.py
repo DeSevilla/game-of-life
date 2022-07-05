@@ -62,7 +62,7 @@ class GameOfLifeFinite:
                 print("For more information, see README.md")
                 print("Commands can be chained together with ;")
                 print("COMMAND LIST:")
-                print("stop - exit the program")
+                print("stop/quit - exit the program")
                 print("step [<n>] - take <n> game steps; if n is omitted it will be 1")
                 print("run <n> [<d>] - display n game steps with a delay of d; if d is omitted it will be 1")
                 print("flip <x> <y> - flip the state at cell (x, y)")
@@ -124,7 +124,7 @@ class GameOfLifeFinite:
                     macros[argc[1]] = ';'.join(current_macro[:-1])  # [:-1] drops the end macro command
                     with open('macros.json', 'w') as macros_file:
                         json.dump(macros, macros_file)
-                    current_macro = ''
+                    current_macro = []
                 else:
                     print("Not currently recording")
             elif argc[0] == "stop" or argc[0] == "quit":
@@ -159,8 +159,11 @@ def adjacent(p1, p2):
     return abs(p1[0] - p2[0]) <= 1 or abs(p1[0] - p2[0]) <= 1
 
 class GameOfLifeInfinite:
-    def __init__(self, points: set):
-        self.board = points
+    def __init__(self, points: set = None):
+        if points is None:
+            self.board = set()
+        else:
+            self.board = points
         self.displayAll = True
         self.min_x = 0
         self.max_x = 0
@@ -168,14 +171,15 @@ class GameOfLifeInfinite:
         self.max_y = 0
 
     def step(self):
-        new_board = set()
-        for point in set.union(*[neighbors(p) for p in self.board]):
-            live = len(self.board.intersection(neighbors(point)))
-            if live == 3:
-                new_board.add(point)
-            elif live == 2 and point in self.board:
-                new_board.add(point)
-        self.board = new_board
+        if self.board:
+            new_board = set()
+            for point in set.union(*[neighbors(p) for p in self.board]):
+                live = len(self.board.intersection(neighbors(point)))
+                if live == 3:
+                    new_board.add(point)
+                elif live == 2 and point in self.board:
+                    new_board.add(point)
+            self.board = new_board
 
     def print_board(self):
         if self.displayAll:
@@ -195,8 +199,8 @@ class GameOfLifeInfinite:
         board_str += '   ' + ' '.join([str(abs(i) % 10) for i in range(self.min_x, self.max_x+1)]) + '\n'
         rows = [['▮' if (x, y) in self.board else '.' for x in range(self.min_x, self.max_x+1)] 
                 for y in range(self.min_y, self.max_y+1)]
-        for i, row in enumerate(rows):
-            board_str += f'{abs(self.min_y + i):2} ' + ' '.join(row) + '\n'
+        for i in range(self.max_y, self.min_y - 1, -1):
+            board_str += f'{abs(i):2} ' + ' '.join(rows[i - self.min_y]) + '\n'
         print(board_str, end=None)
 
     def repl(self):
@@ -219,14 +223,16 @@ class GameOfLifeInfinite:
                 print("For more information, see README.md")
                 print("Commands can be chained together with ;")
                 print("COMMAND LIST:")
-                print("stop - exit the program")
+                print("stop/quit - exit the program")
                 print("step [<n>] - take <n> game steps; if n is omitted it will be 1")
                 print("run <n> [<d>] - display n game steps with a delay of d; if d is omitted it will be 1")
                 print("live <x> <y> - set cell (x, y) to be live")
                 print("dead <x> <y> - set cell (x, y) to be dead")
+                print("soup [<minX> <maxX> <minY> <maxY>] - fill the current or specified window with random values (density 0.5)")
                 print("clear - clear all live cells from the board")
-                print("window [live] [<xmin> <xmax> <ymin> <ymax>] - Sets the window to be printed. "
-                      "'live' will include all live cells; otherwise specify a rectangular range.")
+                print("window (live|fix) [<xmin> <xmax> <ymin> <ymax>] - Sets the window to be printed. "
+                      "'live' will include all live cells; 'fix' alone will fix the current window, or "
+                      "can also take a rectangular range.")
                 print("record - begin recording a macro")
                 print("end <name> - saves the current macro as <name>. It can then be invoked as a command.")
                 print(f"Current macros: {', '.join(m for m in macros)}")
@@ -273,35 +279,59 @@ class GameOfLifeInfinite:
                     print(f'Could not parse {argc[1]} and {argc[2]} as integers')
                 except IndexError:
                     print("Usage - dead <x> <y>")
+            elif argc[0] == 'soup':
+                if len(argc) == 5:
+                    min_x = int(argc[1])
+                    max_x = int(argc[2])
+                    min_y = int(argc[3])
+                    max_y = int(argc[4])
+                else:
+                    min_x = self.min_x
+                    max_x = self.max_x
+                    min_y = self.min_y
+                    max_y = self.max_y
+                for x in range(min_x, max_x + 1):
+                    for y in range(min_y, max_y + 1):
+                        if random.randint(0, 1) == 0:
+                            self.board.add((x, y))
             elif argc[0] == 'clear':
                 if len(argc) > 1:
                     print("clear does not take arguments")
                 else:
                     self.board = set()
             elif argc[0] == "window":
-                if len(argc) == 2 and argc[1] == 'live':
+                if argc[1] == 'live':
                     self.displayAll = True
-                elif len(argc) == 5:
-                    try:
-                        self.displayAll = False
-                        self.min_x = int(argc[1])
-                        self.max_x = int(argc[2])
-                        self.min_y = int(argc[3])
-                        self.max_y = int(argc[4])
-                    except ValueError:
-                        print("Could not interpret arguments as integers")
+                elif argc[1] == 'fix':
+                    self.displayAll = False
+                    if len(argc) == 6:
+                        try:
+                            self.min_x = int(argc[2])
+                            self.max_x = int(argc[3])
+                            self.min_y = int(argc[4])
+                            self.max_y = int(argc[5])
+                        except ValueError:
+                            print("Could not interpret arguments as integers")
+                    elif len(argc) != 2:
+                        print("Usage - window (live|fix) [<minX> <maxX> <minY> <maxY>]")
+                elif argc[1] == 'range':
+                    if self.board:
+                        xs = [p[0] for p in self.board]
+                        ys = [p[1] for p in self.board]
+                        print(min(xs), max(xs), min(ys), max(ys))
+                    else:
+                        print(0, 0, 0, 0)
                 else:
-                    print("Usage - window [live] [<minX> <maxX> <minY> <maxY>]")
+                    print("Usage - window (live|fix) [<minX> <maxX> <minY> <maxY>]")
             elif argc[0] == 'record':
                 recording = True
             elif argc[0] == 'end':
                 if recording:
-                    print(f"Ending macro of length {len(current_macro)}")
                     recording = False
                     macros[argc[1]] = ';'.join(current_macro[:-1])  # [:-1] drops the end macro command
                     with open('macros_infinite.json', 'w') as macros_file:
                         json.dump(macros, macros_file)
-                    current_macro = ''
+                    current_macro = []
                 else:
                     print("Not currently recording")
             elif argc[0] == "stop" or argc[0] == "quit":
@@ -314,5 +344,5 @@ class GameOfLifeInfinite:
 
 if __name__ == '__main__':
     pentomino = {(0, 0), (0, 1), (0, 2), (1, 2), (-1, 1)}
-    game = GameOfLifeInfinite(pentomino)
+    game = GameOfLifeInfinite()
     game.repl()
