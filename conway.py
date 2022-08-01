@@ -1,5 +1,9 @@
 import numpy as np
-import random, json, time
+import random
+import json
+import time
+import pygame
+
 
 class GameOfLifeFinite:
     def __init__(self, size):
@@ -155,20 +159,28 @@ class GameOfLifeFinite:
 def neighbors(p):
     return {(p[0] + dx, p[1] + dy) for dx in [-1, 0, 1] for dy in [-1, 0, 1] if (dx != 0 or dy != 0)}
 
-def adjacent(p1, p2):
-    return abs(p1[0] - p2[0]) <= 1 or abs(p1[0] - p2[0]) <= 1
 
 class GameOfLifeInfinite:
-    def __init__(self, points: set = None):
+    def __init__(self, points: set = None, display_all=False, display_type='game'):
         if points is None:
             self.board = set()
         else:
             self.board = points
-        self.displayAll = True
-        self.min_x = 0
-        self.max_x = 0
-        self.min_y = 0
-        self.max_y = 0
+        self.display_all = display_all
+        self.expected_height = 512
+        self.min_x = -50
+        self.max_x = 50
+        self.min_y = -50
+        self.max_y = 50
+        self.display_type = display_type
+        if self.display_type == 'game':
+            self.text_output = []
+            pygame.init()
+            self.window = pygame.display.set_mode((self.expected_height, self.expected_height), pygame.RESIZABLE)
+            self.clock = pygame.time.Clock()
+            self.font = pygame.font.Font(None, 24)
+            self.max_width = 1024
+            
 
     def step(self):
         if self.board:
@@ -181,8 +193,8 @@ class GameOfLifeInfinite:
                     new_board.add(point)
             self.board = new_board
 
-    def print_board(self):
-        if self.displayAll:
+    def size_board(self):
+        if self.display_all:
             if self.board:
                 xs = [p[0] for p in self.board]
                 self.min_x = min(xs)
@@ -195,51 +207,139 @@ class GameOfLifeInfinite:
                 self.min_y = 0
                 self.max_x = 0
                 self.max_y = 0
+
+    def get_input(self, string):
+        if self.display_type == 'game':
+            return self.game_input(string)
+        else:
+            return input(string)
+    
+    def send_output(self, string):
+        if self.display_type == 'game':
+            self.game_output(string)
+        else:
+            print(string)
+    
+    def game_output(self, string):
+        print(string)
+        self.text_output += [string]
+        self.show_board()
+            
+    def game_input(self, prompt):
+        self.game_output(prompt)
+        done = False
+        result = ''
+        self.text_output.append(result)
+        while not done:
+            changed = False
+            for event in pygame.event.get():
+                if event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_RETURN:
+                        done = True
+                    elif event.key == pygame.K_BACKSPACE and len(result) > 0:
+                        result = result[:-1]
+                        changed = True
+                    else:
+                        result += event.unicode
+                        changed = True
+            if changed:
+                self.text_output[-1] = result
+                self.show_board()
+        return result
+
+    def game_board(self):
+        self.size_board()
+        x_range = self.max_x + 1 - self.min_x
+        y_range = self.max_y + 1 - self.min_y
+        aspect_ratio = x_range / y_range
+        scale_factor = int(self.expected_height / y_range)
+        # print(scale_factor)
+        def scale_x(n):
+            return (n - self.min_x) * scale_factor
+        def scale_y(n):
+            return (n - self.min_y) * scale_factor
+        data = np.zeros((x_range * scale_factor, y_range * scale_factor, 3), dtype=np.uint8)
+        for (x, y) in filter(lambda pair: self.min_x <= pair[0] <= self.max_x and self.min_y <= pair[1] <= self.max_y, self.board):
+            # print('x', scale_x(x), scale_x(x+1))
+            # print('y', scale_y(y), scale_y(y+1))
+            data[scale_x(x):scale_x(x+1),scale_y(y):scale_y(y+1)] = [255, 255, 255]
+        if self.expected_height * aspect_ratio > self.max_width:
+            display_height = int(self.max_width / aspect_ratio)
+        else:
+            display_height = self.expected_height
+        self.window = pygame.display.set_mode((int(display_height * aspect_ratio), display_height))
+        self.window.fill((0, 0, 0))
+        surface = pygame.pixelcopy.make_surface(data)
+        self.window.blit(surface, (0, 0))
+        for i, text in enumerate(self.text_output):
+            text_surface = self.font.render(text, True, pygame.Color('lightskyblue3'))
+            self.window.blit(text_surface, (0, i * 24 + 10))
+        self.text_output = self.text_output[-3:]
+        pygame.display.flip()
+        # img = Image.fromarray(data)
+        # pygame.image.fromstring(img.tobytes(), img.size, img.mode).convert()
+        # img.show()
+
+   
+    def print_board(self, live_value='X', dead_value='.'):
+        self.size_board()
+        rows = [[live_value if (x, y) in self.board else dead_value for x in range(self.min_x, self.max_x+1)] 
+                for y in range(self.min_y, self.max_y+1)]
+
         board_str = '   ' + ' '.join([str(int(abs(i) / 10)) for i in range(self.min_x, self.max_x+1)]) + '\n'
         board_str += '   ' + ' '.join([str(abs(i) % 10) for i in range(self.min_x, self.max_x+1)]) + '\n'
-        rows = [['▮' if (x, y) in self.board else '.' for x in range(self.min_x, self.max_x+1)] 
-                for y in range(self.min_y, self.max_y+1)]
         for i in range(self.max_y, self.min_y - 1, -1):
             board_str += f'{abs(i):2} ' + ' '.join(rows[i - self.min_y]) + '\n'
         print(board_str, end=None)
+ 
+    def show_board(self):
+        if self.display_type == 'print':
+            return self.print_board()
+        elif self.display_type == 'game':
+            return self.game_board()
+        else:
+            raise ValueError('type must be either print or game')
 
-    def repl(self):
-        commands = []
+    def repl(self, starting_commands=None):
+        if starting_commands is None:
+            commands = []
+        else:
+            commands = starting_commands
         current_macro = []
         recording = False
         with open('macros_infinite.json', 'r') as macros_file:
             macros = json.load(macros_file)
         while True:
-            self.print_board()
+            self.show_board()
             if not commands:
-                control = input("Enter command: ")
+                control = self.get_input("Enter command or 'help': ")
                 commands = [comm.strip() for comm in control.split(';')]
             else:
-                print(commands[0])
+                self.send_output(commands[0])
             if recording:
                 current_macro.append(commands[0])
             argc = commands[0].split(' ')
             if argc[0] == "help" or argc[0] == '"help"':
-                print("For more information, see README.md")
-                print("Commands can be chained together with ;")
-                print("COMMAND LIST:")
-                print("stop/quit - exit the program")
-                print("step [<n>] - take <n> game steps; if n is omitted it will be 1")
-                print("run <n> [<d>] - display n game steps with a delay of d; if d is omitted it will be 1")
-                print("live <x> <y> - set cell (x, y) to be live")
-                print("dead <x> <y> - set cell (x, y) to be dead")
-                print("soup [<minX> <maxX> <minY> <maxY>] - fill the current or specified window with random values (density 0.5)")
-                print("clear - clear all live cells from the board")
-                print("window (live|fix) [<xmin> <xmax> <ymin> <ymax>] - Sets the window to be printed. "
+                self.send_output("For more information, see README.md")
+                self.send_output("Commands can be chained together with ;")
+                self.send_output("COMMAND LIST:")
+                self.send_output("stop/quit - exit the program")
+                self.send_output("step [<n>] - take <n> game steps; if n is omitted it will be 1")
+                self.send_output("run <n> [<d>] - display n game steps with a delay of d; if d is omitted it will be 1")
+                self.send_output("live <x> <y> - set cell (x, y) to be live")
+                self.send_output("dead <x> <y> - set cell (x, y) to be dead")
+                self.send_output("soup [<minX> <maxX> <minY> <maxY>] - fill the current or specified window with random values (density 0.5)")
+                self.send_output("clear - clear all live cells from the board")
+                self.send_output("window (live|fix) [<xmin> <xmax> <ymin> <ymax>] - Sets the window to be printed. "
                       "'live' will include all live cells; 'fix' alone will fix the current window, or "
                       "can also take a rectangular range.")
-                print("record - begin recording a macro")
-                print("end <name> - saves the current macro as <name>. It can then be invoked as a command.")
-                print(f"Current macros: {', '.join(m for m in macros)}")
-                print("help - print this message")
+                self.send_output("record - begin recording a macro")
+                self.send_output("end <name> - saves the current macro as <name>. It can then be invoked as a command.")
+                self.send_output(f"Current macros: {', '.join(m for m in macros)}")
+                self.send_output("help - print this message")
             elif argc[0] == 'step':
                 if len(argc) > 2:
-                    print('Usage: step [<n>]')
+                    self.send_output('Usage: step [<n>]')
                 elif len(argc) == 2:
                     n = int(argc[1])
                     for i in range(n):
@@ -248,7 +348,7 @@ class GameOfLifeInfinite:
                     self.step()
             elif argc[0] == 'run':
                 if len(argc) > 3 or len(argc) < 2:
-                    print("Usage: run <n> [<d>]")
+                    self.send_output("Usage: run <n> [<d>]")
                 else:
                     n = int(argc[1])
                     if len(argc) == 3:
@@ -256,10 +356,10 @@ class GameOfLifeInfinite:
                     else:
                         d = 0.3
                     for i in range(n):
-                        print(i + 1)
+                        self.send_output(str(i + 1))
                         self.step()
                         if i < n - 1:
-                            self.print_board()
+                            self.show_board()
                             time.sleep(d)
             elif argc[0] == 'live':
                 try:
@@ -277,6 +377,8 @@ class GameOfLifeInfinite:
                     self.board.remove((x, y))
                 except ValueError:
                     print(f'Could not parse {argc[1]} and {argc[2]} as integers')
+                except KeyError:
+                    print(f"({argc[1]}, {argc[2]}) is not live")
                 except IndexError:
                     print("Usage - dead <x> <y>")
             elif argc[0] == 'soup':
@@ -301,9 +403,9 @@ class GameOfLifeInfinite:
                     self.board = set()
             elif argc[0] == "window":
                 if argc[1] == 'live':
-                    self.displayAll = True
+                    self.display_all = True
                 elif argc[1] == 'fix':
-                    self.displayAll = False
+                    self.display_all = False
                     if len(argc) == 6:
                         try:
                             self.min_x = int(argc[2])
@@ -345,4 +447,5 @@ class GameOfLifeInfinite:
 if __name__ == '__main__':
     pentomino = {(0, 0), (0, 1), (0, 2), (1, 2), (-1, 1)}
     game = GameOfLifeInfinite()
+    # game.repl(starting_commands=["pentomino", "window live", "run 20 0.15"])
     game.repl()
