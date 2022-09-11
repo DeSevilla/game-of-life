@@ -1,3 +1,5 @@
 *.exe
 *.o
 *.hi
+rust/target/*
+python/__pycache__
