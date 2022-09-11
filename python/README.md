@@ -1,8 +1,10 @@
 
 #  Conway.py
 
-This uses a finite, square board of customizable size. 
-It takes commands from user input which can modify the state of the board.
+There are two implementations here. One uses a finite, square board of customizable size.
+The other is infinite. They both take commands from user input which can modify the state of the board.
+This README is out of date and needs to be improved to cover the infinite version.
+The details for the finite version are below but may also be out of date slightly.
 
 ## How to Play
 
